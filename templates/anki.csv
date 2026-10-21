@@ -2,5 +2,6 @@
 #html:true
 #columns:表面,裏面,タグ
 #tags column:3
-"平均値の定理の結論は？（f は [a, b] で連続、(a, b) で微分可能）","f'(c) = (f(b) - f(a)) / (b - a) を満たす c が a &lt; c &lt; b に少なくとも1つ存在する<br><small>出典：数学 3.1</small>","数学 基本"
+"平均値の定理の結論は？","\(f'(c) = \dfrac{f(b) - f(a)}{b - a}\) を満たす \(c\) が \(a \lt c \lt b\) に少なくとも1つ存在する<br><small>出典：数学 3.1</small>","数学 基本"
+"ばね定数 \(k\) のばねにつながれた質量 \(m\) の物体の単振動の周期 \(T\) は？","\(T = 2\pi\sqrt{\dfrac{m}{k}}\)<br><small>補足：周期は振幅によらない</small><br><small>出典：物理 2.3</small>","物理 基本"
 "deteriorate の意味は？","悪化する（動詞）<br><small>補足：例 ""The patient's condition deteriorated rapidly.""</small><br><small>出典：英語 5.1</small>","英語 基本"
