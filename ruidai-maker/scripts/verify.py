@@ -10,10 +10,11 @@ OK の問題は、問題文と答えを Markdown（数式は $…$）で表示�
 import json
 import re
 import sys
+from itertools import combinations
 
-from sympy import (Derivative, Function, Interval, Matrix, S, Symbol,
-                   checkodesol, diff, dsolve, expand, factor, integrate, latex,
-                   limit, simplify, solve, solveset, sympify, together, Eq)
+from sympy import (Derivative, Function, Interval, Matrix, Rational, S, Symbol,
+                   checkodesol, diff, dsolve, expand, factor, gcd, integrate,
+                   latex, limit, simplify, solve, solveset, sympify, together, Eq)
 from sympy.solvers.deutils import ode_order
 
 
@@ -232,6 +233,139 @@ def check_matrix(p, ns, P):
     return ok, got, rf"$A = {mat_tex(m)}$ の{MATRIX_OPS[op]}を求めよ。", a
 
 
+LINSYS_ASK = {
+    "none": "解をもたないように",
+    "infinite": "無数の解をもつように",
+    "solvable": "解をもつように",
+    "unique": "ただ1つの解をもつように",
+}
+
+
+def generic_rank(m, k):
+    """k が「ふつうの値」のときの階数（特別な値を避けるため、半端な有理数を代入して数える）。"""
+    return m.subs(k, Rational(1234567, 1000003)).rank() if k is not None else m.rank()
+
+
+def special_values(m, k):
+    """階数が下がりうる k の値：最大の小行列式すべての共通因数（gcd）の実数解。"""
+    r = generic_rank(m, k)
+    if k is None or r == 0:
+        return []
+    g = 0
+    for rows in combinations(range(m.rows), r):
+        for cols in combinations(range(m.cols), r):
+            g = gcd(g, m.extract(list(rows), list(cols)).det())
+    return [v for v in solve(g, k) if v.is_real]
+
+
+def classify(a, ab, n):
+    """階数を比べて「解なし」「無数」「ただ1つ」に分ける。"""
+    ra, rab = a.rank(), ab.rank()
+    if ra < rab:
+        return "none"
+    return "unique" if ra == n else "infinite"
+
+
+def linsys_sets(a, ab, n, k):
+    """条件ごとに、成り立つ k の範囲を {"only": [...]} か {"except": [...]} で返す。"""
+    cands = sorted(set(special_values(a, k)) | set(special_values(ab, k)), key=sort_key)
+    gen = classify(a.subs(k, Rational(1234567, 1000003)), ab.subs(k, Rational(1234567, 1000003)), n) \
+        if k is not None else classify(a, ab, n)
+    at = {c: classify(a.subs(k, c), ab.subs(k, c), n) for c in cands}
+    holds = {
+        "none": lambda c: c == "none",
+        "infinite": lambda c: c == "infinite",
+        "solvable": lambda c: c != "none",
+        "unique": lambda c: c == "unique",
+    }
+    result = {}
+    for name, ok in holds.items():
+        if ok(gen):
+            result[name] = {"except": [c for c in cands if not ok(at[c])]}
+        else:
+            result[name] = {"only": [c for c in cands if ok(at[c])]}
+    return gen, at, result
+
+
+def same_values(got, expected):
+    return len(got) == len(expected) and all(any(same(g, e) for e in expected) for g in got)
+
+
+def check_general_solution(a, b, sol, xs, ns, P):
+    """解が方程式を満たし、任意定数の数が「変数の数 − 階数」と同じで、それぞれが独立か。"""
+    vec = Matrix([P(s) for s in sol])
+    params = sorted(vec.free_symbols - set(ns.values()), key=lambda s: s.name)
+    satisfies = all(simplify(e) == 0 for e in (a * vec - b))
+    dim = len(xs) - a.rank()
+    independent = len(params) == dim and (dim == 0 or vec.jacobian(params).rank() == dim)
+    return satisfies and independent, vec, params, {"方程式を満たす": satisfies, "任意定数": len(params), "必要な数": dim}
+
+
+def system_tex(a, b, xs):
+    """連立方程式を cases 環境で書く（係数 0 の項は省く）。"""
+    lines = []
+    for i in range(a.rows):
+        terms = [a[i, j] * x for j, x in enumerate(xs) if a[i, j] != 0]
+        left = join_terms(terms) if terms else "0"
+        lines.append(f"{left} = {tex(b[i])}")
+    return r"\begin{cases} " + r" \\ ".join(lines) + r" \end{cases}"
+
+
+def check_linsys(p, ns, P):
+    """パラメータ付き連立1次方程式。answer は k の値のリスト、または {"except": [...]}（それ以外の全部）。"""
+    xs = [ns[v] for v in p["vars"]]
+    k = ns.get(p["param"]) if "param" in p else None
+    a = Matrix([[P(c) for c in row] for row in p["matrix"]])
+    b = Matrix([P(c) for c in p["rhs"]])
+    ab = a.row_join(b)
+    ask = p.get("ask", "solve")
+    system = system_tex(a, b, xs)
+
+    if k is None:  # パラメータなし：解を求める
+        kind = classify(a, ab, len(xs))
+        if kind == "none":
+            ok, got, ans = p["answer"] == "none", "解なし", "解なし"
+        else:
+            ok, vec, params, got = check_general_solution(a, b, p["answer"], xs, ns, P)
+            ans = rf"$({', '.join(tex(x) for x in xs)}) = \left({', '.join(short_tex(c) for c in vec)}\right)$"
+            if params:
+                ans += f"（${', '.join(tex(s) for s in params)}$ は任意）"
+        return ok, got, rf"次の連立1次方程式を解け。 $$ {system} $$", ans
+
+    gen, at, sets = linsys_sets(a, ab, len(xs), k)
+    target = sets[ask]
+    exp = p["answer"]
+    if isinstance(exp, dict):
+        ok = "except" in target and same_values(target["except"], [P(v) for v in exp["except"]])
+    else:
+        ok = "only" in target and same_values(target["only"], [P(v) for v in exp])
+    got = {"ふつうの k": gen, "特別な k": {str(c): v for c, v in at.items()}}
+
+    kv = tex(k)
+    if "only" in target:
+        ans = rf"${kv} = " + r",\ ".join(tex(v) for v in target["only"]) + "$"
+    else:
+        ans = rf"${kv} \neq " + r",\ ".join(tex(v) for v in target["except"]) + "$" if target["except"] else "すべての実数"
+
+    q = rf"次の連立1次方程式が{LINSYS_ASK[ask]}定数 ${kv}$ の値を定めよ"
+    if "solution" in p:  # そのときの解も問う
+        if "at" in p:
+            at_k = P(p["at"])
+        elif len(target.get("only", [])) == 1:
+            at_k = target["only"][0]
+        else:
+            raise ValueError("解を確かめる k の値を at で指定してください")
+        a0, b0 = a.subs(k, at_k), b.subs(k, at_k)
+        sol_ok, vec, params, detail = check_general_solution(a0, b0, p["solution"], xs, ns, P)
+        ok = ok and sol_ok
+        got["解の検算"] = detail
+        q += "。また、そのときの解を求めよ"
+        ans += rf"。このとき $({', '.join(tex(x) for x in xs)}) = \left({', '.join(short_tex(c) for c in vec)}\right)$"
+        if params:
+            ans += f"（${', '.join(tex(s) for s in params)}$ は任意）"
+    return ok, got, q + rf"。 $$ {system} $$", ans
+
+
 def ode_text(eq, f, x):
     """y(x).diff(x, 2) を y'' のように書き、階数の高い項から並べる（y'' - 3y' + 2y）。"""
     name = f.__name__
@@ -284,7 +418,7 @@ CHECKS = {
     "limit": check_limit, "integral": check_integral, "derivative": check_derivative,
     "solve": check_solve, "extrema": check_extrema, "maxmin": check_maxmin,
     "partial": check_partial, "double_integral": check_double_integral,
-    "matrix": check_matrix, "ode": check_ode,
+    "matrix": check_matrix, "ode": check_ode, "linsys": check_linsys,
 }
 
 
@@ -292,6 +426,8 @@ def namespace(p):
     """問題で使う変数・関数の名前を SymPy の記号にする。"""
     names = p.get("vars") or ([p["var"]] if "var" in p else [])
     ns = {n: Symbol(n) for n in names}
+    if "param" in p:
+        ns[p["param"]] = Symbol(p["param"])
     if "func" in p:
         ns[p["func"]] = Function(p["func"])
     return ns

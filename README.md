@@ -53,7 +53,7 @@ flashcard-maker/
 ## 類題作成スキル（ruidai-maker）
 
 数学の元問題から、同じ解法で解ける類題を作るスキルを `ruidai-maker/` に追加しました。
-答えは Python（SymPy）で検算します。極限・積分・極値・最大最小・偏微分・重積分・線形代数（行列式・逆行列・固有値・階数）・微分方程式に対応しています。詳しくは [ruidai-maker/SKILL.md](ruidai-maker/SKILL.md) と [ruidai-maker/CHANGELOG.md](ruidai-maker/CHANGELOG.md) を参照してください。
+答えは Python（SymPy）で検算します。極限・積分・極値・最大最小・偏微分・重積分・線形代数（行列式・逆行列・固有値・階数・連立1次方程式）・微分方程式に対応しています。詳しくは [ruidai-maker/SKILL.md](ruidai-maker/SKILL.md) と [ruidai-maker/CHANGELOG.md](ruidai-maker/CHANGELOG.md) を参照してください。
 
 flashcard-maker は「教材に書かれていない内容は作らない」スキルです。一方、類題は新しい問題を作るので、ルールがぶつからないよう別のスキルにしています。
 タグは `ruidai-v1`、`ruidai-v2`… です。
