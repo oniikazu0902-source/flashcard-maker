@@ -1,0 +1,19 @@
+[
+  {"id": "4-1", "type": "partial", "expr": "x**3*y + sin(2*x*y)", "vars": ["x", "y"], "wrt": ["x", "y"], "answer": "3*x**2 + 2*cos(2*x*y) - 4*x*y*sin(2*x*y)"},
+  {"id": "4-2", "type": "partial", "expr": "x*y**2 + cos(x*y)", "vars": ["x", "y"], "wrt": ["x", "y"], "answer": "2*y - sin(x*y) - x*y*cos(x*y)"},
+  {"id": "4-3（設定替え）", "type": "partial", "expr": "x**2*y**3 + exp(x*y)", "vars": ["x", "y"], "wrt": ["x", "y"], "answer": "6*x*y**2 + exp(x*y) + x*y*exp(x*y)"},
+  {"id": "5-1", "type": "double_integral", "expr": "2*x + y", "vars": ["x", "y"], "bounds": [["y", "0", "x"], ["x", "0", "1"]], "answer": "5/6"},
+  {"id": "5-2", "type": "double_integral", "expr": "x + y", "vars": ["x", "y"], "bounds": [["y", "0", "x"], ["x", "0", "2"]], "answer": "4"},
+  {"id": "5-3", "type": "double_integral", "expr": "x**2 + y", "vars": ["x", "y"], "bounds": [["y", "0", "x"], ["x", "0", "1"]], "answer": "5/12"},
+  {"id": "6-1", "type": "matrix", "op": "eigenvals", "matrix": [["5", "2"], ["2", "2"]], "answer": ["1", "6"]},
+  {"id": "6-2", "type": "matrix", "op": "eigenvals", "matrix": [["3", "1"], ["2", "2"]], "answer": ["1", "4"]},
+  {"id": "6-3", "type": "matrix", "op": "eigenvals", "matrix": [["1", "2"], ["2", "1"]], "answer": ["3", "-1"]},
+  {"id": "7-1", "type": "ode", "ode": "y(x).diff(x, 2) - 3*y(x).diff(x) + 2*y(x)", "var": "x", "func": "y", "ics": {"y(0)": "1", "y'(0)": "0"}, "answer": "2*exp(x) - exp(2*x)"},
+  {"id": "7-2", "type": "ode", "ode": "y(x).diff(x, 2) - 4*y(x).diff(x) + 3*y(x)", "var": "x", "func": "y", "ics": {"y(0)": "0", "y'(0)": "2"}, "answer": "exp(3*x) - exp(x)"},
+  {"id": "7-3", "type": "ode", "ode": "y(x).diff(x, 2) - y(x).diff(x) - 2*y(x)", "var": "x", "func": "y", "ics": {"y(0)": "3", "y'(0)": "0"}, "answer": "exp(2*x) + 2*exp(-x)"},
+  {"id": "7-4（一般解・定数の付け方を入れ替え）", "type": "ode", "ode": "y(x).diff(x, 2) - 5*y(x).diff(x) + 6*y(x)", "var": "x", "func": "y", "answer": "C2*exp(2*x) + C1*exp(3*x)"},
+  {"id": "neg-4（誤答：積の微分を忘れる）", "type": "partial", "expr": "x**2*y + sin(x*y)", "vars": ["x", "y"], "wrt": ["x", "y"], "answer": "2*x + cos(x*y)"},
+  {"id": "neg-5（誤答：固有値の符号）", "type": "matrix", "op": "eigenvals", "matrix": [["1", "2"], ["2", "1"]], "answer": ["3", "1"]},
+  {"id": "neg-6（誤答：任意定数が足りない）", "type": "ode", "ode": "y(x).diff(x, 2) - 5*y(x).diff(x) + 6*y(x)", "var": "x", "func": "y", "answer": "C1*exp(2*x)"},
+  {"id": "neg-7（誤答：特性方程式の解の符号）", "type": "ode", "ode": "y(x).diff(x, 2) - 5*y(x).diff(x) + 6*y(x)", "var": "x", "func": "y", "answer": "C1*exp(-2*x) + C2*exp(-3*x)"}
+]
