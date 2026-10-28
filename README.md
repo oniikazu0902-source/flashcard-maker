@@ -50,6 +50,20 @@ flashcard-maker/
 
 詳しくは [CHANGELOG.md](CHANGELOG.md) を参照してください。
 
+## 類題作成スキル（ruidai-maker）
+
+数学の元問題から、同じ解法で解ける類題を作るスキルを `ruidai-maker/` に追加しました。
+答えは Python（SymPy）で検算します。詳しくは [ruidai-maker/SKILL.md](ruidai-maker/SKILL.md) と [ruidai-maker/CHANGELOG.md](ruidai-maker/CHANGELOG.md) を参照してください。
+
+flashcard-maker は「教材に書かれていない内容は作らない」スキルです。一方、類題は新しい問題を作るので、ルールがぶつからないよう別のスキルにしています。
+タグは `ruidai-v1`、`ruidai-v2`… です。
+
+検算スクリプトを使うには、Python と SymPy が必要です。
+
+```
+python -m pip install --user sympy
+```
+
 ## 動作確認の方法と限界
 
 - カードの生成は、Claude が各バージョンの `SKILL.md` に従って行いました。
