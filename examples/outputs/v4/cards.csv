@@ -1,0 +1,28 @@
+#separator:comma
+#html:true
+#columns:表面,裏面,タグ
+#tags column:3
+"平均値の定理の結論は？","\(f'(c) = \dfrac{f(b) - f(a)}{b - a}\) を満たす \(c\) が \(a \lt c \lt b\) に少なくとも1つ存在する<br><small>出典：数学 3.1</small>","数学 基本"
+"平均値の定理が成り立つための \(f(x)\) の条件は？","閉区間 \([a, b]\) で連続、開区間 \((a, b)\) で微分可能<br><small>出典：数学 3.1</small>","数学 基本"
+"平均値の定理で \(f(a) = f(b)\) の場合を何という？","ロルの定理<br><small>出典：数学 3.1</small>","数学 基本"
+"\(f(x) = \lvert x \rvert\) は \(x = 0\) で微分可能か？","微分可能ではない<br><small>補足：右側微分係数 \(1\) と左側微分係数 \(-1\) が一致しない</small><br><small>出典：数学 3.2</small>","数学 基本"
+"\(f(x) = \lvert x \rvert\) は \(x = 0\) で連続か？","連続である<br><small>出典：数学 3.2</small>","数学 基本"
+"\(e^x\) のマクローリン展開は？","\(e^x = 1 + x + \dfrac{x^2}{2!} + \dfrac{x^3}{3!} + \cdots\)<br><small>補足：すべての実数 \(x\) で成り立つ</small><br><small>出典：数学 3.3</small>","数学 基本"
+"\(\sin x\) のマクローリン展開は？","\(\sin x = x - \dfrac{x^3}{3!} + \dfrac{x^5}{5!} - \cdots\)<br><small>出典：数学 3.3</small>","数学 基本"
+"\(\displaystyle\lim_{x \to 0} \dfrac{\sin x}{x}\) の値は？","\(1\)<br><small>補足：\(\sin x\) のマクローリン展開から \(\dfrac{\sin x}{x} = 1 - \dfrac{x^2}{3!} + \cdots\) となる</small><br><small>出典：数学 例題（過去問）</small>","数学 応用"
+"deteriorate の意味は？","悪化する（動詞）<br><small>補足：例 ""The patient's condition deteriorated rapidly.""</small><br><small>出典：英語 5.1</small>","英語 基本"
+"substantial の意味は？","かなりの、相当な（形容詞）<br><small>補足：例 a substantial amount of money</small><br><small>出典：英語 5.1</small>","英語 基本"
+"comprehensive の意味は？","包括的な（形容詞）<br><small>出典：英語 5.1</small>","英語 基本"
+"comprehensive と comprehensible の違いは？","comprehensive＝包括的な、comprehensible＝理解できる<br><small>補足：混同しやすい語として教材で注意されている</small><br><small>出典：英語 5.1</small>","英語 応用"
+"not A but B の意味は？","AではなくB<br><small>補足：例 He is not a teacher but a student.</small><br><small>出典：英語 5.2</small>","英語 基本"
+"It is not until A that B の意味は？","AになってはじめてBする<br><small>補足：例 It was not until he lost his health that he realized its value.</small><br><small>出典：英語 5.2</small>","英語 基本"
+"「〜するやいなや」を no sooner を使って表すと？","no sooner A than B<br><small>出典：英語 5.3</small>","英語 応用"
+"「〜するやいなや」を hardly を使って表すと？","hardly A when B<br><small>出典：英語 5.3</small>","英語 応用"
+"no sooner を文頭に置くと何が起こる？","倒置が起こる<br><small>補足：例 No sooner had I arrived than it began to rain.</small><br><small>出典：英語 5.3</small>","英語 応用"
+"運動量保存則が成り立つ条件は？","物体系に外力が働かない（または外力の和が \(0\) の）とき<br><small>出典：物理 2.1</small>","物理 基本"
+"質量 \(m_1, m_2\) の2物体について、運動量保存則を教材の記号（\(v_1, v_2, v_1', v_2'\)）で表すと？","\(m_1 v_1 + m_2 v_2 = m_1 v_1' + m_2 v_2'\)<br><small>出典：物理 2.1</small>","物理 基本"
+"反発係数 \(e\) の定義式は？（記号は教材 2.2 の表記）","\(e = -\dfrac{v_1' - v_2'}{v_1 - v_2}\)<br><small>出典：物理 2.2</small>","物理 基本"
+"反発係数 \(e\) の取りうる範囲は？","\(0 \le e \le 1\)<br><small>出典：物理 2.2</small>","物理 基本"
+"\(e = 1\) の衝突を何という？","弾性衝突<br><small>補足：弾性衝突では力学的エネルギーが保存される</small><br><small>出典：物理 2.2</small>","物理 基本"
+"\(e = 0\) の衝突を何という？","完全非弾性衝突<br><small>出典：物理 2.2</small>","物理 基本"
+"ばね定数 \(k\) のばねにつながれた質量 \(m\) の物体の単振動の周期 \(T\) は？","\(T = 2\pi\sqrt{\dfrac{m}{k}}\)<br><small>補足：周期は振幅によらない</small><br><small>出典：物理 2.3</small>","物理 基本"
