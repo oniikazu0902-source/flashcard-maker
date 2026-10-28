@@ -19,9 +19,39 @@ from sympy.solvers.deutils import ode_order
 
 # ---------- 共通の道具 ----------
 
+def join_terms(terms):
+    """項を「a - b + c」の形でつなぐ。"""
+    text = tex(terms[0])
+    for t in terms[1:]:
+        text += f" - {tex(-t)}" if t.could_extract_minus_sign() else f" + {tex(t)}"
+    return text
+
+
 def tex(expr):
-    """読みやすい LaTeX にする（\\sin{\\left(x \\right)} ではなく \\sin{x}）。"""
+    """読みやすい LaTeX にする（\\sin{\\left(x \\right)} ではなく \\sin{x}）。
+    足し算はプラスの項から始める（-e^{2x} + 2e^x ではなく 2e^x - e^{2x}）。"""
+    expr = sympify(expr)
+    if expr.is_Add:
+        terms = expr.as_ordered_terms()
+        positive = [t for t in terms if not t.could_extract_minus_sign()]
+        if positive and terms[0].could_extract_minus_sign():
+            terms.remove(positive[0])
+            return join_terms([positive[0]] + terms)
     return latex(expr, fold_func_brackets=True)
+
+
+def body_tex(expr):
+    """積分・極限の中身が足し算なら、かっこで囲む（∫ 2x + y dy のあいまいさを防ぐ）。"""
+    return rf"\left({tex(expr)}\right)" if expr.is_Add else tex(expr)
+
+
+def sort_key(value):
+    """解・固有値を小さい順に並べるための値（複素数は実部、虚部の順）。"""
+    try:
+        c = complex(value.evalf())
+        return (c.real, c.imag)
+    except TypeError:  # 文字を含む値は並べ替えない
+        return (float("inf"), 0)
 
 
 def short_tex(expr, forms=(simplify, together, factor)):
@@ -66,14 +96,14 @@ def points_tex(v, points, label):
 def check_limit(p, ns, P):
     x, e = ns[p["var"]], P(p["expr"])
     got = limit(e, x, P(p["at"]))
-    q = rf"$\displaystyle\lim_{{{tex(x)} \to {tex(P(p['at']))}}} {tex(e)}$ を求めよ。"
+    q = rf"$\displaystyle\lim_{{{tex(x)} \to {tex(P(p['at']))}}} {body_tex(e)}$ を求めよ。"
     return same(got, P(p["answer"])), got, q, f"${short_tex(got)}$"
 
 
 def check_integral(p, ns, P):
     x, e = ns[p["var"]], P(p["expr"])
     got = integrate(e, (x, P(p["lower"]), P(p["upper"])))
-    q = rf"$\displaystyle\int_{{{tex(P(p['lower']))}}}^{{{tex(P(p['upper']))}}} {tex(e)} \, d{tex(x)}$ を求めよ。"
+    q = rf"$\displaystyle\int_{{{tex(P(p['lower']))}}}^{{{tex(P(p['upper']))}}} {body_tex(e)} \, d{tex(x)}$ を求めよ。"
     return same(got, P(p["answer"])), got, q, f"${short_tex(got)}$"
 
 
@@ -87,7 +117,7 @@ def check_derivative(p, ns, P):
 
 def check_solve(p, ns, P):
     x, e = ns[p["var"]], P(p["expr"])
-    got = solve(e, x)
+    got = sorted(solve(e, x), key=sort_key)
     expected = [P(a) for a in p["answer"]]
     ok = len(got) == len(expected) and all(any(same(g, a) for a in expected) for g in got)
     a = rf"${tex(x)} = " + r",\ ".join(short_tex(g) for g in got) + "$"
@@ -167,7 +197,7 @@ def check_double_integral(p, ns, P):
     got = integrate(e, *bounds)
     signs = "".join(rf"\int_{{{tex(lo)}}}^{{{tex(hi)}}} " for _, lo, hi in reversed(bounds))
     ds = " ".join(rf"\, d{tex(v)}" for v, _, _ in bounds)
-    q = rf"$\displaystyle{signs}{tex(e)} {ds}$ を求めよ。"
+    q = rf"$\displaystyle{signs}{body_tex(e)} {ds}$ を求めよ。"
     return same(got, P(p["answer"])), got, q, f"${short_tex(got)}$"
 
 
@@ -190,7 +220,7 @@ def check_matrix(p, ns, P):
         expected = [P(c) for c in ans]
         ok = sum(got.values()) == len(expected) and all(
             sum(1 for c in expected if same(c, val)) == mult for val, mult in got.items())
-        a = r"$\lambda = " + r",\ ".join(short_tex(val) for val in got) + "$"
+        a = r"$\lambda = " + r",\ ".join(short_tex(val) for val in sorted(got, key=sort_key)) + "$"
         multi = [val for val, mult in got.items() if mult > 1]
         if multi:
             a += "（" + "、".join(rf"$\lambda = {short_tex(val)}$ は重解" for val in multi) + "）"
@@ -214,11 +244,7 @@ def ode_text(eq, f, x):
     def rank(term):
         return -max((n for n, s in enumerate(syms) if term.has(s)), default=-1)
 
-    terms = sorted(eq.as_ordered_terms(), key=rank)
-    text = tex(terms[0])
-    for t in terms[1:]:
-        text += f" - {tex(-t)}" if t.could_extract_minus_sign() else f" + {tex(t)}"
-    return text
+    return join_terms(sorted(eq.as_ordered_terms(), key=rank))
 
 
 def parse_ics(ics, f, x, P):
