@@ -60,6 +60,11 @@ flashcard-maker は「教材に書かれていない内容は作らない」ス�
 
 検算スクリプトを使うには、Python と SymPy が必要です。
 
+## 編入試験の過去問の入手先
+
+高専からの編入試験（筆記）の過去問について、大学ごとの公開状況と公式ページを [docs/kakomon-sources.md](docs/kakomon-sources.md) にまとめました。
+過去問の著作権は各大学にあるので、このリポジトリには過去問そのものは入れていません。
+
 ```
 python -m pip install --user sympy
 ```
