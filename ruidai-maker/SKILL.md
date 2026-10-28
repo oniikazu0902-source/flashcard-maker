@@ -21,32 +21,49 @@ description: 数学の元問題（過去問・例題）と解答から、同じ�
 
 ## 手順
 
-1. 元問題の解法の要点を1行でまとめる。
-2. 指定された数だけ類題を作る（指定がなければ3問）。
-3. 検算用ファイル `problems.json` を書き、`python scripts/verify.py problems.json` を実行する。
-4. NG の問題は直して、もう一度検算する。
-5. 出力する。
+1. **検算の準備を確認する。** `python -c "import sympy"` が成功するか確かめる。
+   失敗したら、ユーザーに `python -m pip install --user sympy` を案内する。
+   入れられない場合は類題を作ってよいが、すべての類題に「検算：未実施」と書き、答えが誤っている可能性を伝える。
+2. 元問題の解法の要点を1行でまとめる。
+3. 指定された数だけ類題を作る（指定がなければ3問）。
+4. 検算用ファイル `problems.json` を作業用の一時フォルダに保存する（ユーザーのファイルと混ぜない）。
+5. このスキルのフォルダにある `scripts/verify.py` で検算する：
+   `python <このスキルのフォルダ>/scripts/verify.py <一時フォルダ>/problems.json`
+6. NG・ERROR の問題は直して、もう一度検算する。
+7. 出力する。**問題の式と答えは、スクリプトが表示した LaTeX をそのまま使う**（自分で書き直さない）。
 
 ## 検算用ファイルの書き方
+
+式を書くのはこのファイルの1回だけにする。問題文の式はスクリプトが作る。
 
 ```json
 [
   {"id": "1", "type": "limit", "expr": "sin(3*x)/x", "var": "x", "at": "0", "answer": "3"},
   {"id": "2", "type": "integral", "expr": "x*exp(2*x)", "var": "x", "lower": "0", "upper": "1", "answer": "(exp(2)+1)/4"},
   {"id": "3", "type": "derivative", "expr": "x**2*sin(x)", "var": "x", "answer": "2*x*sin(x) + x**2*cos(x)"},
-  {"id": "4", "type": "solve", "expr": "x**2 - 5*x + 6", "var": "x", "answer": ["2", "3"]}
+  {"id": "4", "type": "solve", "expr": "x**2 - 5*x + 6", "var": "x", "answer": ["2", "3"]},
+  {"id": "5", "type": "extrema", "expr": "x**3 - 3*x", "var": "x", "answer": {"max": [["-1", "2"]], "min": [["1", "-2"]]}}
 ]
 ```
 
-- `type`：`limit`（極限）、`integral`（定積分）、`derivative`（導関数）、`solve`（方程式 expr = 0 の解）
+- `type`：`limit`（極限）、`integral`（定積分）、`derivative`（導関数）、`solve`（方程式 expr = 0 の解）、`extrema`（極値）
+- `extrema` の `answer` は `{"max": [[x, 極大値], …], "min": [[x, 極小値], …]}`。極値がなければ `{"max": [], "min": []}`
 - 式は Python（SymPy）の書き方：かけ算は `*`、累乗は `**`、`exp(x)`、`log(x)`、`sqrt(x)`、`pi`
+
+## スクリプトの表示
+
+```
+[OK] 5
+  問題: f(x) = x^{3} - 3 x
+  答え: x = -1 で極大値 2、x = 1 で極小値 -2
+```
 
 ## 出力形式
 
 ```
 ### 類題1（数値替え）
-**問題**：$\displaystyle\lim_{x \to 0} \dfrac{\sin 3x}{x}$ を求めよ。
-**答え**：$3$
+**問題**：$<スクリプトの「問題」>$ を求めよ。
+**答え**：$<スクリプトの「答え」>$
 **要点**：…（3行以内）
 元問題：例題1 ／ 検算：OK
 ```
