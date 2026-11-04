@@ -1,0 +1,13 @@
+[
+  {"id": "9-1", "type": "matrix", "op": "eigenvects", "matrix": [["1", "1"], ["-1", "3"]], "answer": [{"value": "2", "vectors": [["1", "1"]]}]},
+  {"id": "9-2", "type": "matrix", "op": "expr", "expr": "P**-1*A*P", "mats": {"A": [["1", "1"], ["-1", "3"]], "P": [["1", "0"], ["1", "1"]]}, "answer": [["2", "1"], ["0", "2"]]},
+  {"id": "9-3", "type": "matrix", "op": "expr", "expr": "A**n", "int_vars": ["n"], "mats": {"A": [["1", "1"], ["-1", "3"]]}, "answer": [["(2-n)*2**(n-1)", "n*2**(n-1)"], ["-n*2**(n-1)", "(n+2)*2**(n-1)"]]},
+  {"id": "10-1", "type": "prob", "vars": ["n"], "balls": {"赤": "3", "白": "n-3"}, "draws": 2, "event": {"at": {"2": "赤"}}, "answer": "3/n"},
+  {"id": "10-2", "type": "prob", "vars": ["n"], "balls": {"赤": "3", "白": "n-3"}, "draws": 2, "event": {"at": {"1": "赤"}}, "given": {"at": {"2": "赤"}}, "answer": "2/(n-1)"},
+  {"id": "11", "type": "identity", "vars": ["x", "s"], "funcs": ["g"], "lhs": "g(log(x)).diff(x)", "rhs": "g(s).diff(s)*exp(-s)", "subs": {"s": "log(x)"}},
+
+  {"id": "neg-11（固有ベクトルが固有値1つ分足りない形）", "type": "matrix", "op": "eigenvects", "matrix": [["2", "1", "1"], ["1", "2", "1"], ["1", "1", "2"]], "answer": [{"value": "4", "vectors": [["1", "1", "1"]]}, {"value": "1", "vectors": [["1", "-1", "0"]]}]},
+  {"id": "neg-12（A^n で 2^n と 2^(n-1) を取り違え）", "type": "matrix", "op": "expr", "expr": "A**n", "int_vars": ["n"], "mats": {"A": [["1", "1"], ["-1", "3"]]}, "answer": [["(2-n)*2**n", "n*2**n"], ["-n*2**n", "(n+2)*2**n"]]},
+  {"id": "neg-13（条件付き確率を同時確率と取り違え）", "type": "prob", "vars": ["n"], "balls": {"赤": "3", "白": "n-3"}, "draws": 2, "event": {"at": {"1": "赤"}}, "given": {"at": {"2": "赤"}}, "answer": "6/(n*(n-1))"},
+  {"id": "neg-14（戻す・戻さないの取り違え）", "type": "prob", "replace": true, "vars": ["n"], "balls": {"赤": "3", "白": "n-3"}, "draws": 2, "event": {"at": {"1": "赤"}}, "given": {"at": {"2": "赤"}}, "answer": "2/(n-1)"}
+]

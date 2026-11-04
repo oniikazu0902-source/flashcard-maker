@@ -12,8 +12,8 @@ import re
 import sys
 from itertools import combinations
 
-from sympy import (Derivative, Function, Interval, Matrix, Rational, S, Symbol,
-                   checkodesol, diff, dsolve, expand, factor, gcd, integrate,
+from sympy import (Derivative, Function, Interval, Matrix, MatrixSymbol, Rational, S, Symbol,
+                   checkodesol, diff, dsolve, expand, eye, factor, gcd, integrate,
                    latex, limit, simplify, solve, solveset, sympify, together, Eq)
 from sympy.solvers.deutils import ode_order
 
@@ -202,11 +202,56 @@ def check_double_integral(p, ns, P):
     return same(got, P(p["answer"])), got, q, f"${short_tex(got)}$"
 
 
-MATRIX_OPS = {"det": "行列式", "inverse": "逆行列", "eigenvals": "固有値", "rank": "階数"}
+MATRIX_OPS = {"det": "行列式", "inverse": "逆行列", "eigenvals": "固有値", "rank": "階数",
+              "eigenvects": "固有値と固有ベクトル"}
+
+
+def to_matrix(rows, P):
+    return Matrix([[P(c) for c in row] for row in rows])
+
+
+def check_eigenvects(m, ans, P):
+    """固有ベクトルは定数倍の自由があるので、計算結果とは比べず、
+    A v = λ v を満たすか、本数が固有空間の次元と同じか、互いに独立かを調べる。"""
+    vals = m.eigenvals()
+    detail, ok, parts = {}, len(ans) == len(vals), []
+    for item in ans:
+        lam = P(item["value"])
+        vecs = [Matrix([P(c) for c in v]) for v in item["vectors"]]
+        dim = m.rows - (m - lam * eye(m.rows)).rank()  # 固有空間の次元
+        is_val = any(same(lam, v) for v in vals)
+        eigen = all(any(simplify(c) != 0 for c in v) and all(simplify(c) == 0 for c in m * v - lam * v)
+                    for v in vecs)
+        independent = Matrix.hstack(*vecs).rank() == len(vecs)
+        good = is_val and eigen and independent and len(vecs) == dim
+        ok = ok and good
+        detail[str(lam)] = {"固有値": is_val, "Av=λv": eigen, "本数": len(vecs), "必要な本数": dim}
+        if len(vecs) == 1:
+            vec, cond = rf"c {mat_tex(vecs[0])}", r"c \neq 0"
+        else:
+            vec = " + ".join(rf"c_{{{i}}} {mat_tex(v)}" for i, v in enumerate(vecs, 1))
+            cond = rf"({', '.join(f'c_{{{i}}}' for i in range(1, len(vecs) + 1))}) \neq ({', '.join('0' for _ in vecs)})"
+        parts.append(rf"$\lambda = {short_tex(lam)}$ のとき ${vec}$（${cond}$）")
+    return ok, detail, "、".join(parts)
+
+
+def check_matrix_expr(p, ns, P):
+    """P**-1*A*P や A**n のような行列の式を計算する（n は int_vars に書くと自然数として扱う）。"""
+    mats = {name: to_matrix(rows, P) for name, rows in p["mats"].items()}
+    got = sympify(p["expr"], locals={**ns, **mats}).applyfunc(simplify)
+    expected = to_matrix(p["answer"], P)
+    ok = got.shape == expected.shape and all(simplify(c) == 0 for c in (got - expected))
+    # 問題文には P^{-1} A P のように、行列の名前のまま書く
+    symbols = {name: MatrixSymbol(name, *m.shape) for name, m in mats.items()}
+    e = latex(sympify(p["expr"], locals={**ns, **symbols}))
+    given = ", ".join(rf"{name} = {mat_tex(m)}" for name, m in mats.items())
+    return ok, got, rf"${given}$ のとき、${e}$ を求めよ。", rf"${e} = {mat_tex(got)}$"
 
 
 def check_matrix(p, ns, P):
-    m = Matrix([[P(c) for c in row] for row in p["matrix"]])
+    if p["op"] == "expr":
+        return check_matrix_expr(p, ns, P)
+    m = to_matrix(p["matrix"], P)
     op, ans = p["op"], p["answer"]
     if op == "det":
         got = m.det()
@@ -228,6 +273,8 @@ def check_matrix(p, ns, P):
     elif op == "rank":
         got = m.rank()
         ok, a = got == int(ans), rf"$\operatorname{{rank}} A = {got}$"
+    elif op == "eigenvects":
+        ok, got, a = check_eigenvects(m, ans, P)
     else:
         raise ValueError(f"未対応の op です: {op}")
     return ok, got, rf"$A = {mat_tex(m)}$ の{MATRIX_OPS[op]}を求めよ。", a
@@ -414,11 +461,79 @@ def check_ode(p, ns, P):
     return ok, got, rf"微分方程式 ${lhs} = 0$ の一般解を求めよ。", rf"${y} = {tex(ans)}$（$C_1, C_2, \ldots$ は任意定数）"
 
 
+def check_identity(p, ns, P):
+    """「〜を示せ」の等式が成り立つかを調べる。確かめるのは結論だけで、証明の過程は確かめない。"""
+    lhs, rhs = P(p["lhs"]), P(p["rhs"])
+    subs = {ns[k]: P(v) for k, v in p.get("subs", {}).items()}
+    diff_ = simplify((lhs.subs(subs) - rhs.subs(subs)).doit())
+    return (diff_ == 0, {"左辺 - 右辺": diff_}, rf"${tex(lhs)} = {tex(rhs)}$ を示せ。",
+            "等式が成り立つ（結論のみ検算。証明の過程は確かめていない）")
+
+
+def draw_probability(balls, draws, replace, cond):
+    """球の色の出方をすべて数え上げ、cond を満たす確率の合計を返す（個数に文字があってもよい）。"""
+    total = []
+
+    def walk(seq, counts, pr):
+        if len(seq) == draws:
+            if cond(seq):
+                total.append(pr)
+            return
+        whole = sum(counts.values())
+        for color, k in counts.items():
+            rest = dict(counts)
+            if not replace:
+                rest[color] = k - 1
+            walk(seq + [color], rest, pr * k / whole)
+
+    walk([], balls, S.One)
+    return simplify(sum(total))
+
+
+def event_of(spec, colors, draws):
+    """{"at": {"1": "赤"}, "count": {"赤": 2}} を、色の並びを受け取る判定関数と説明文にする。"""
+    at = {int(i): c for i, c in spec.get("at", {}).items()}
+    count = {c: int(k) for c, k in spec.get("count", {}).items()}
+    for i, c in at.items():
+        if c not in colors or not 1 <= i <= draws:
+            raise ValueError(f"事象の書き方が違います: {i}回目 {c}")
+    for c in count:
+        if c not in colors:
+            raise ValueError(f"事象の書き方が違います: {c}")
+
+    def cond(seq):
+        return all(seq[i - 1] == c for i, c in at.items()) and all(seq.count(c) == k for c, k in count.items())
+
+    words = [f"{i}回目に取り出した球が{c}球" for i, c in sorted(at.items())]
+    words += [f"{c}球がちょうど{k}個" for c, k in count.items()]
+    return cond, "かつ".join(words)
+
+
+def check_prob(p, ns, P):
+    """箱から球を取り出す確率。given があれば条件付き確率 P(event | given)。"""
+    balls = {c: P(k) for c, k in p["balls"].items()}
+    draws, replace = int(p["draws"]), p.get("replace", False)
+    ev, ev_text = event_of(p["event"], balls, draws)
+    if "given" in p:
+        gv, gv_text = event_of(p["given"], balls, draws)
+        both = draw_probability(balls, draws, replace, lambda s: ev(s) and gv(s))
+        got = simplify(both / draw_probability(balls, draws, replace, gv))
+        ask = f"{gv_text}であった。このとき、{ev_text}である条件付き確率を求めよ。"
+    else:
+        got = draw_probability(balls, draws, replace, ev)
+        ask = f"{ev_text}である確率を求めよ。"
+    box = "、".join(f"{c}球 ${tex(k)}$ 個" for c, k in balls.items())
+    how = "取り出した球は毎回箱に戻す" if replace else "取り出した球は箱に戻さない"
+    q = f"{box}が入った箱から、球を1個ずつ{draws}回取り出す（{how}）。{ask}"
+    return same(got, P(p["answer"])), got, q, f"${short_tex(got)}$"
+
+
 CHECKS = {
     "limit": check_limit, "integral": check_integral, "derivative": check_derivative,
     "solve": check_solve, "extrema": check_extrema, "maxmin": check_maxmin,
     "partial": check_partial, "double_integral": check_double_integral,
     "matrix": check_matrix, "ode": check_ode, "linsys": check_linsys,
+    "identity": check_identity, "prob": check_prob,
 }
 
 
@@ -428,8 +543,12 @@ def namespace(p):
     ns = {n: Symbol(n) for n in names}
     if "param" in p:
         ns[p["param"]] = Symbol(p["param"])
+    for n in p.get("int_vars", []):  # A**n の n のような自然数
+        ns[n] = Symbol(n, integer=True, positive=True)
     if "func" in p:
         ns[p["func"]] = Function(p["func"])
+    for f in p.get("funcs", []):
+        ns[f] = Function(f)
     return ns
 
 
@@ -458,7 +577,7 @@ def main():
             print(f"  問題: {q}")
             print(f"  答え: {a}")
         else:
-            print(f"[NG] {p['id']}: 計算結果 {got} / 想定 {p['answer']}")
+            print(f"[NG] {p['id']}: 計算結果 {got} / 想定 {p.get('answer', '（等式）')}")
             ng += 1
 
     print(f"--- {len(problems)} 問中 OK {len(problems) - ng} 問、NG {ng} 問")
