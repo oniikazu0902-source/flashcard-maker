@@ -12,8 +12,9 @@ import re
 import sys
 from itertools import combinations
 
-from sympy import (Derivative, Function, Interval, Matrix, MatrixSymbol, Rational, S, Symbol,
-                   checkodesol, diff, dsolve, expand, eye, factor, gcd, integrate,
+import mpmath
+from sympy import (Abs, Derivative, Function, Integral, Interval, Matrix, MatrixSymbol, Rational, S, Sum,
+                   Symbol, checkodesol, diff, dsolve, expand, eye, factor, gcd, integrate, lambdify, oo,
                    latex, limit, simplify, solve, solveset, sympify, together, Eq)
 from sympy.solvers.deutils import ode_order
 
@@ -101,11 +102,53 @@ def check_limit(p, ns, P):
     return same(got, P(p["answer"])), got, q, f"${short_tex(got)}$"
 
 
+NUMERIC_NOTE = "SymPy が記号で計算できなかったので、数値（30桁で計算し、12桁以上の一致）で照合した"
+
+
+def split_abs(e, x, lo, hi):
+    """|f(x)| を含む積分を、f(x) の符号が変わる点で区間に分け、絶対値を外して計算する。"""
+    cuts = {r for a in e.atoms(Abs) for r in solve(a.args[0], x) if r.is_real and lo < r < hi}
+    edges = [lo] + sorted(cuts, key=float) + [hi]
+    total = S.Zero
+    for a, b in zip(edges, edges[1:]):
+        mid = (a + b) / 2
+        piece = e.replace(Abs, lambda t: t if t.subs(x, mid) >= 0 else -t)
+        total += integrate(piece, (x, a, b))
+    return simplify(total)
+
+
+def to_mp(v):
+    """SymPy の値（∞ を含む）を mpmath の数にする。"""
+    if v in (oo, -oo):
+        return mpmath.inf if v == oo else -mpmath.inf
+    return mpmath.mpf(str(v.evalf(30)))
+
+
+def numeric_integral(e, bounds):
+    if len(bounds) == 1:  # 1重積分は mpmath の数値積分（端点の特異性にも強い）
+        x, lo, hi = bounds[0]
+        with mpmath.workdps(30):
+            return sympify(mpmath.quad(lambdify(x, e, "mpmath"), [to_mp(lo), to_mp(hi)]))
+    return Integral(e, *bounds).evalf(30)
+
+
+def integral_result(e, bounds, expected):
+    """積分を計算して照合する。絶対値は場合分けで外す。それでも記号で計算できなければ数値で照合する。"""
+    got = integrate(e, *bounds)
+    if got.has(Integral) and len(bounds) == 1 and e.has(Abs) and all(b.is_finite for b in bounds[0][1:]):
+        got = split_abs(e, *bounds[0])
+    if not got.has(Integral):
+        return same(got, expected), got, f"${short_tex(got)}$", None
+    value = numeric_integral(e, bounds)
+    ok = abs(value - expected.evalf(30)) < Rational(1, 10**12)
+    return ok, value, f"${short_tex(expected)}$", NUMERIC_NOTE
+
+
 def check_integral(p, ns, P):
     x, e = ns[p["var"]], P(p["expr"])
-    got = integrate(e, (x, P(p["lower"]), P(p["upper"])))
+    ok, got, a, note = integral_result(e, [(x, P(p["lower"]), P(p["upper"]))], P(p["answer"]))
     q = rf"$\displaystyle\int_{{{tex(P(p['lower']))}}}^{{{tex(P(p['upper']))}}} {body_tex(e)} \, d{tex(x)}$ を求めよ。"
-    return same(got, P(p["answer"])), got, q, f"${short_tex(got)}$"
+    return ok, got, q, a, note
 
 
 def check_derivative(p, ns, P):
@@ -173,6 +216,78 @@ def check_maxmin(p, ns, P):
     return ok, got, q, "、".join(points_tex(v, got["max"], "最大値") + points_tex(v, got["min"], "最小値"))
 
 
+def check_series(p, ns, P):
+    """一般項 term（n の式）から作った最初の項が、実際のテイラー展開の係数と一致するか調べる。
+    有限個の項の確認なので、一般項の証明ではない。"""
+    x, n, e = ns[p["var"]], ns[p["index"]], P(p["expr"])
+    term, start = P(p["term"]), int(p.get("start", 0))
+    count = int(p.get("terms", 10))
+    order = start + count
+    poly = e.series(x, 0, order).removeO()
+    wrong = [k for k in range(order)
+             if not same(poly.coeff(x, k) * x**k, term.subs(n, k) if k >= start else S.Zero)]
+    s = latex(Sum(term, (n, start, oo)))
+    v = tex(x)
+    return (not wrong, {"係数が合わない次数": wrong}, rf"$f({v}) = {tex(e)}$ をマクローリン展開せよ。",
+            rf"$f({v}) = {s}$", f"一般項から作った {order} 次未満の係数を照合した（一般項そのものの証明ではない）")
+
+
+def probe_saddle(e, xs, point, f0):
+    """判定式が 0 の点で、近くの値を調べる。f0 より大きい点と小さい点の両方があれば極値ではない。"""
+    signs = set()
+    slopes = [Rational(k, 2) for k in range(-6, 7)]
+    dirs = [(1, m) for m in slopes] + [(-1, -m) for m in slopes] + [(0, 1), (0, -1)]
+    for r in (Rational(1, 100), Rational(1, 1000)):
+        for dx, dy in dirs:
+            d = simplify(e.subs({xs[0]: point[0] + dx * r, xs[1]: point[1] + dy * r}) - f0)
+            if d != 0:
+                signs.add(bool(d > 0))
+    return signs == {True, False}
+
+
+def check_extrema2(p, ns, P):
+    """2変数関数の極値：f_x = f_y = 0 の点を、判定式 H = f_xx f_yy - f_xy^2 で分類する。"""
+    xs = [ns[v] for v in p["vars"]]
+    e = P(p["expr"])
+    fx, fy = diff(e, xs[0]), diff(e, xs[1])
+    pts = [(s[xs[0]], s[xs[1]]) for s in solve([fx, fy], xs, dict=True)
+           if all(s[v].is_real for v in xs)]
+    got = {"max": [], "min": [], "none": [], "判定できない": []}
+    probed = False  # 判定式が 0 の点を、近くの値を調べて「極値ではない」とした
+    for pt in sorted(pts, key=lambda t: (sort_key(t[0]), sort_key(t[1]))):
+        at = dict(zip(xs, pt))
+        fxx, fyy, fxy = (simplify(diff(e, *w).subs(at)) for w in ([xs[0]] * 2, [xs[1]] * 2, xs))
+        h, f0 = simplify(fxx * fyy - fxy**2), simplify(e.subs(at))
+        row = [pt[0], pt[1], f0]
+        if h > 0:
+            got["max" if fxx < 0 else "min"].append(row)
+        elif h < 0:
+            got["none"].append(row)
+        elif probe_saddle(e, xs, pt, f0):
+            got["none"].append(row)
+            probed = True
+        else:
+            got["判定できない"].append(row)
+
+    def same_rows(a, b):
+        return len(a) == len(b) and all(any(all(same(u, w) for u, w in zip(r, t)) for t in b) for r in a)
+
+    ok = not got["判定できない"] and all(
+        same_rows(got[k], [[P(c) for c in r] for r in p["answer"].get(k, [])]) for k in ("max", "min"))
+    names = ", ".join(tex(v) for v in xs)
+    parts = [rf"$({names}) = ({tex(a)}, {tex(b)})$ で{label} ${short_tex(val)}$"
+             for key, label in (("max", "極大値"), ("min", "極小値")) for a, b, val in got[key]]
+    a = "、".join(parts) if parts else "極値なし"
+    if got["none"]:
+        a += "（" + "、".join(rf"$({tex(u)}, {tex(w)})$" for u, w, _ in got["none"]) + " は極値ではない）"
+    note = None
+    if probed:
+        note = "判定式が 0 の点は、近くに値が大きい点と小さい点の両方があることを確かめて「極値ではない」とした"
+    if got["判定できない"]:
+        note = "判定式が 0 で、近くを調べても判定できない点がある（要確認）"
+    return ok, got, rf"$f({names}) = {tex(e)}$ の極値を求めよ。", a, note
+
+
 def check_partial(p, ns, P):
     e = P(p["expr"])
     got = diff(e, *[ns[v] for v in p["wrt"]])
@@ -195,11 +310,11 @@ def check_double_integral(p, ns, P):
     """bounds は内側の積分から順に [[変数, 下端, 上端], ...] と書く。"""
     e = P(p["expr"])
     bounds = [(ns[v], P(lo), P(hi)) for v, lo, hi in p["bounds"]]
-    got = integrate(e, *bounds)
+    ok, got, a, note = integral_result(e, bounds, P(p["answer"]))
     signs = "".join(rf"\int_{{{tex(lo)}}}^{{{tex(hi)}}} " for _, lo, hi in reversed(bounds))
     ds = " ".join(rf"\, d{tex(v)}" for v, _, _ in bounds)
     q = rf"$\displaystyle{signs}{body_tex(e)} {ds}$ を求めよ。"
-    return same(got, P(p["answer"])), got, q, f"${short_tex(got)}$"
+    return ok, got, q, a, note
 
 
 MATRIX_OPS = {"det": "行列式", "inverse": "逆行列", "eigenvals": "固有値", "rank": "階数",
@@ -534,6 +649,7 @@ CHECKS = {
     "partial": check_partial, "double_integral": check_double_integral,
     "matrix": check_matrix, "ode": check_ode, "linsys": check_linsys,
     "identity": check_identity, "prob": check_prob,
+    "series": check_series, "extrema2": check_extrema2,
 }
 
 
@@ -543,6 +659,8 @@ def namespace(p):
     ns = {n: Symbol(n) for n in names}
     if "param" in p:
         ns[p["param"]] = Symbol(p["param"])
+    if "index" in p:  # 級数の項の番号
+        ns[p["index"]] = Symbol(p["index"], integer=True, nonnegative=True)
     for n in p.get("int_vars", []):  # A**n の n のような自然数
         ns[n] = Symbol(n, integer=True, positive=True)
     if "func" in p:
@@ -567,17 +685,23 @@ def main():
         try:
             if p["type"] not in CHECKS:
                 raise ValueError(f"未対応の type です: {p['type']}")
-            ok, got, q, a = CHECKS[p["type"]](p, ns, P)
+            # 5つ目の値（注意書き）は、確かめ方に限界がある型だけが返す
+            ok, got, q, a, *rest = CHECKS[p["type"]](p, ns, P)
         except Exception as e:  # 式の書き間違いなど
             print(f"[ERROR] {p.get('id')}: {e}")
             ng += 1
             continue
+        note = rest[0] if rest else None
         if ok:
             print(f"[OK] {p['id']}")
             print(f"  問題: {q}")
             print(f"  答え: {a}")
+            if note:
+                print(f"  注意: {note}")
         else:
             print(f"[NG] {p['id']}: 計算結果 {got} / 想定 {p.get('answer', '（等式）')}")
+            if note:
+                print(f"  注意: {note}")
             ng += 1
 
     print(f"--- {len(problems)} 問中 OK {len(problems) - ng} 問、NG {ng} 問")

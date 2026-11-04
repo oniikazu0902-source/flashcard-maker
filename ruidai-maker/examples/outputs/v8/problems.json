@@ -1,0 +1,11 @@
+[
+  {"id": "12", "type": "series", "expr": "log(1 + x - 2*x**2)", "var": "x", "index": "n", "term": "((-1)**(n+1)*2**n - 1)/n*x**n", "start": 1},
+  {"id": "13", "type": "extrema2", "expr": "x**4 + y**4 - 2*(x - y)**2", "vars": ["x", "y"], "answer": {"max": [], "min": [["-sqrt(2)", "sqrt(2)", "-8"], ["sqrt(2)", "-sqrt(2)", "-8"]]}},
+  {"id": "14", "type": "integral", "expr": "Abs(x**2 - 3*x + 2)", "var": "x", "lower": "0", "upper": "3", "answer": "11/6"},
+  {"id": "15（数値で照合する例）", "type": "integral", "expr": "x**x", "var": "x", "lower": "0", "upper": "1", "answer": "Sum((-1)**(n+1)/n**n, (n, 1, oo))", "vars": ["x", "n"]},
+
+  {"id": "neg-15（一般項の 2^n の符号を忘れた）", "type": "series", "expr": "log(1 + x - 2*x**2)", "var": "x", "index": "n", "term": "(2**n - 1)/n*x**n", "start": 1},
+  {"id": "neg-16（原点を極大と誤答）", "type": "extrema2", "expr": "x**4 + y**4 - 2*(x - y)**2", "vars": ["x", "y"], "answer": {"max": [["0", "0", "0"]], "min": [["-sqrt(2)", "sqrt(2)", "-8"], ["sqrt(2)", "-sqrt(2)", "-8"]]}},
+  {"id": "neg-17（絶対値を外し忘れた）", "type": "integral", "expr": "Abs(x**2 - 3*x + 2)", "var": "x", "lower": "0", "upper": "3", "answer": "3/2"},
+  {"id": "要確認の例（x^4 + y^4 の原点は判定式 0 で、本当は極小）", "type": "extrema2", "expr": "x**4 + y**4", "vars": ["x", "y"], "answer": {"max": [], "min": [["0", "0", "0"]]}}
+]
