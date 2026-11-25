@@ -1,0 +1,7 @@
+[
+  {"id": "元問題（例題2・正しい答え）", "type": "integral", "expr": "x*exp(x)", "var": "x", "lower": "0", "upper": "1", "answer": "1"},
+  {"id": "元問題（例題2・誤った答え e - 1 を示された場合）", "type": "integral", "expr": "x*exp(x)", "var": "x", "lower": "0", "upper": "1", "answer": "E - 1"},
+  {"id": "2-1（数値替え）", "type": "integral", "expr": "x*exp(x)", "var": "x", "lower": "0", "upper": "2", "answer": "exp(2) + 1"},
+  {"id": "2-2（条件替え：区間が絶対値の符号の変わる点をまたぐ）", "type": "integral", "expr": "Abs(x - 1)*exp(x)", "var": "x", "lower": "0", "upper": "2", "answer": "2*E - 2"},
+  {"id": "8-1（条件替え：解が無数にある k と、そのときの解）", "type": "linsys", "vars": ["x", "y", "z"], "param": "k", "ask": "infinite", "matrix": [["1", "-1", "1"], ["1", "4", "k"], ["2", "k", "4"]], "rhs": ["1", "2", "3"], "answer": ["3"], "solution": ["4 - 7*t", "1 - 2*t", "5*t - 2"]}
+]

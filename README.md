@@ -47,6 +47,7 @@ flashcard-maker/
 | v2 | `[a, b]` のカンマでCSVが壊れる、`\|x\|` で表が崩れる、補足に教材にない内容 | 形式ごとのエスケープ、Anki専用の見出し、出典、難易度の定義 |
 | v3 | 補足に別カードの答え、英語がほぼ全部「応用」、物理の記号の意味が不明、除外した論点が伝わらない | セルフチェック、出力後の報告、科目ごとの注意、難易度の再定義 |
 | v4 | 数式が文字だけで読みにくい、表面に別カードの答えが見える | 数式を形式ごとに書き分け（Anki＝MathJax、Markdown＝LaTeX、Quizlet＝特殊文字）。答えが見えないルールを表面にも適用 |
+| v5 | Copilot で試すと、補足に別カードの答えが入る、中身のない補足がある | 全カードの答えを一覧にして突き合わせる手順、空の補足は省く、突き合わせの結果を報告に書く。ただし守られるかは回によって変わる（課題として記録） |
 
 詳しくは [CHANGELOG.md](CHANGELOG.md) を参照してください。
 
@@ -63,6 +64,17 @@ flashcard-maker は「教材に書かれていない内容は作らない」ス�
 タグは `ruidai-v1`、`ruidai-v2`… です。
 
 検算スクリプトを使うには、Python と SymPy が必要です。
+
+## Microsoft Copilot で使う
+
+Microsoft Copilot（職場・学校向けの Copilot Chat）の Agent Builder は、`SKILL.md` を含む zip をスキルとして読み込める。
+次の2つの zip を作り、エージェントの「スキル」に追加すると、そのまま使える。検算スクリプトも Copilot の中で動く。
+
+- flashcard-maker：`SKILL.md` と `templates/`
+- ruidai-maker：`ruidai-maker/` の中の `SKILL.md`、`references/`、`scripts/`
+
+Copilot の画面は `$…$` の数式を表示できないので、エージェントの指示に「検算スクリプトは `--math paren` を付けて実行する」と書いておく。
+Copilot での試行結果は `ruidai-maker/examples/outputs/v9/review.md` にある。
 
 ## 編入試験の過去問の入手先
 

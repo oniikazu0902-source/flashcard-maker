@@ -2,6 +2,7 @@
 
 使い方:
     python verify.py problems.json
+    python verify.py --math paren problems.json   # 文中の数式を $…$ ではなく \\(…\\) で表示する
 
 problems.json の書き方は references/types.md を参照。
 OK の問題は、問題文と答えを Markdown（数式は $…$）で表示する。出力にはこれをそのまま使う。
@@ -670,12 +671,24 @@ def namespace(p):
     return ns
 
 
+def paren_math(text):
+    """文中の $…$ を \\(…\\) にする。$$…$$（独立した数式）はそのまま残す。
+    Microsoft Copilot など、$…$ を数式として表示しない画面のため。"""
+    parts = re.split(r"(\$\$.*?\$\$)", text)
+    return "".join(p if p.startswith("$$") else re.sub(r"\$(.+?)\$", r"\\(\1\\)", p) for p in parts)
+
+
 def main():
-    if len(sys.argv) != 2:
-        print("使い方: python verify.py problems.json")
+    args = sys.argv[1:]
+    paren = args[:2] == ["--math", "paren"]
+    if paren:
+        args = args[2:]
+    if len(args) != 1:
+        print("使い方: python verify.py [--math paren] problems.json")
         sys.exit(2)
+    show = paren_math if paren else (lambda text: text)
     # utf-8-sig：Windows のメモ帳や PowerShell が付ける BOM があっても読めるようにする
-    with open(sys.argv[1], encoding="utf-8-sig") as fp:
+    with open(args[0], encoding="utf-8-sig") as fp:
         problems = json.load(fp)
 
     ng = 0
@@ -694,8 +707,8 @@ def main():
         note = rest[0] if rest else None
         if ok:
             print(f"[OK] {p['id']}")
-            print(f"  問題: {q}")
-            print(f"  答え: {a}")
+            print(f"  問題: {show(q)}")
+            print(f"  答え: {show(a)}")
             if note:
                 print(f"  注意: {note}")
         else:
