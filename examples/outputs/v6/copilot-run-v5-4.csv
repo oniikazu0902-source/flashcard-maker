@@ -1,0 +1,14 @@
+#separator:comma
+#html:true
+#columns:表面,裏面,タグ
+#tags column:3
+"平均値の定理の条件は？","関数 \(f(x)\) が閉区間 \([a,b]\) で連続、開区間 \((a,b)\) で微分可能<br><small>補足：</small><br><small>出典：3.1 平均値の定理</small>","数学 基本"
+"平均値の定理の結論は？","\(f'(c)=\dfrac{f(b)-f(a)}{b-a}\) を満たす \(c\) が \(a \lt c \lt b\) に少なくとも1つ存在する<br><small>補足：</small><br><small>出典：3.1 平均値の定理</small>","数学 基本"
+"\(f(a)=f(b)\) の場合の平均値の定理を何という？","ロルの定理<br><small>補足：</small><br><small>出典：3.1 平均値の定理</small>","数学 基本"
+"\(f(x)=\lvert x \rvert\) は \(x=0\) で連続か？","連続である<br><small>補足：</small><br><small>出典：3.2 絶対値関数の微分可能性</small>","数学 基本"
+"\(f(x)=\lvert x \rvert\) は \(x=0\) で微分可能か？","微分可能ではない<br><small>補足：</small><br><small>出典：3.2 絶対値関数の微分可能性</small>","数学 基本"
+"\(f(x)=\lvert x \rvert\) の \(x=0\) における右側微分係数は？","1<br><small>補足：</small><br><small>出典：3.2 絶対値関数の微分可能性</small>","数学 基本"
+"\(f(x)=\lvert x \rvert\) の \(x=0\) における左側微分係数は？","-1<br><small>補足：</small><br><small>出典：3.2 絶対値関数の微分可能性</small>","数学 基本"
+"\(f(x)=\lvert x \rvert\) が \(x=0\) で微分可能でない理由は？","右側微分係数と左側微分係数が一致しないため<br><small>補足：</small><br><small>出典：3.2 絶対値関数の微分可能性</small>","数学 基本"
+"\(e^x\) のマクローリン展開は？","\(e^x=1+x+\dfrac{x^2}{2!}+\dfrac{x^3}{3!}+\cdots\)<br><small>補足：すべての実数 \(x\) で成り立つ。</small><br><small>出典：3.3 マクローリン展開</small>","数学 基本"
+"\(\sin x\) のマクローリン展開は？","\(\sin x=x-\dfrac{x^3}{3!}+\dfrac{x^5}{5!}-\cdots\)<br><small>補足：</small><br><small>出典：3.3 マクローリン展開</small>","数学 基本"

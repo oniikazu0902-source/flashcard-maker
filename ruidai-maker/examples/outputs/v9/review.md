@@ -68,7 +68,7 @@ Copilot の Agent Builder は、`SKILL.md` を含む zip をそのままスキ�
 
 | # | 課題 | 案 |
 |---|---|---|
-| F1 | フラッシュカードの補足のルールが安定しない | 数学の `verify.py` と同じように、出力を検査するスクリプト（空の補足、補足とほかのカードの答えの文字列の重なり）を作る |
+| F1 | フラッシュカードの補足のルールが安定しない | → flashcard-maker v6 で対応（`scripts/check_cards.py`。結果は `examples/outputs/v6/review.md`） |
 | W7 | `identity` の問題文の表示 | 前から残っている |
 | W8 | 証明の過程 | 前から残っている |
 | W3 | 文章題の立式 | 前から残っている |

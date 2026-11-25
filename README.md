@@ -18,6 +18,8 @@
 flashcard-maker/
 ├── SKILL.md              … スキル本体（Claude が読む指示書）
 ├── templates/            … 出力形式の見本（anki.csv / markdown.md / quizlet.tsv）
+├── scripts/
+│   └── check_cards.py    … 出力したカードを検査するスクリプト（v6 から）
 ├── examples/
 │   ├── sample-input.md   … 動作確認用の教材サンプル（自作の架空の講義ノート）
 │   └── outputs/          … 各バージョンで生成したカードと動作確認レポート
@@ -47,7 +49,8 @@ flashcard-maker/
 | v2 | `[a, b]` のカンマでCSVが壊れる、`\|x\|` で表が崩れる、補足に教材にない内容 | 形式ごとのエスケープ、Anki専用の見出し、出典、難易度の定義 |
 | v3 | 補足に別カードの答え、英語がほぼ全部「応用」、物理の記号の意味が不明、除外した論点が伝わらない | セルフチェック、出力後の報告、科目ごとの注意、難易度の再定義 |
 | v4 | 数式が文字だけで読みにくい、表面に別カードの答えが見える | 数式を形式ごとに書き分け（Anki＝MathJax、Markdown＝LaTeX、Quizlet＝特殊文字）。答えが見えないルールを表面にも適用 |
-| v5 | Copilot で試すと、補足に別カードの答えが入る、中身のない補足がある | 全カードの答えを一覧にして突き合わせる手順、空の補足は省く、突き合わせの結果を報告に書く。ただし守られるかは回によって変わる（課題として記録） |
+| v5 | Copilot で試すと、補足に別カードの答えが入る、中身のない補足がある | 全カードの答えを一覧にして突き合わせる手順、空の補足は省く、突き合わせの結果を報告に書く。ただし守られるかは回によって変わった |
+| v6 | 指示書だけでは、補足のルールが回によって守られない | 出力を検査するスクリプト `scripts/check_cards.py` を追加。Copilot で2回試し、2回とも漏れを見つけて直してから出力した |
 
 詳しくは [CHANGELOG.md](CHANGELOG.md) を参照してください。
 
@@ -70,7 +73,7 @@ flashcard-maker は「教材に書かれていない内容は作らない」ス�
 Microsoft Copilot（職場・学校向けの Copilot Chat）の Agent Builder は、`SKILL.md` を含む zip をスキルとして読み込める。
 次の2つの zip を作り、エージェントの「スキル」に追加すると、そのまま使える。検算スクリプトも Copilot の中で動く。
 
-- flashcard-maker：`SKILL.md` と `templates/`
+- flashcard-maker：`SKILL.md`、`templates/`、`scripts/`
 - ruidai-maker：`ruidai-maker/` の中の `SKILL.md`、`references/`、`scripts/`
 
 Copilot の画面は `$…$` の数式を表示できないので、エージェントの指示に「検算スクリプトは `--math paren` を付けて実行する」と書いておく。
